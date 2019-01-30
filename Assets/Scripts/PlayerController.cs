@@ -153,10 +153,23 @@ public class PlayerController : MonoBehaviour
         {
             var child = captures.transform.GetChild(0);
             child.transform.parent = null;
-            child.transform.position = RightFirePoint.transform.position;
+            
+            if(UnityEngine.Random.value < 0.5f)
+            {
+                child.transform.position = RightFirePoint.transform.position;
+
+            }
+            else
+            {
+                child.transform.position = LeftFirePoint.transform.position;
+
+            }
+
             var direction = (hit.point - child.transform.position).normalized * 100.0f;
             child.GetComponent<ObjectControl>().Target = null;
             child.GetComponent<Rigidbody>().velocity = direction;
+            child.tag = "Enemy";
+            child.GetComponent<MeshRenderer>().material.color = Color.white;
             UpdateObjectCount(-1);
         }
     }
@@ -212,7 +225,7 @@ public class PlayerController : MonoBehaviour
 
                 child.transform.localPosition = new Vector3(1.5f - i, 2.0f - j, 0.0f);
 
-                yield return new WaitForSeconds(0.2f);
+                yield return new WaitForSeconds(0.1f);
             }
         }
 
