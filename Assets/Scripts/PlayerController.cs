@@ -13,23 +13,32 @@ public class PlayerController : MonoBehaviour
     private float jumpAmount;
     [SerializeField]
     private float rotationSpeed;
-
     [SerializeField]
     private GameObject RightFirePoint;
     [SerializeField]
     private GameObject LeftFirePoint;
+    [SerializeField]
+    private float projectileSpeed;
+    [SerializeField]
+    private float shieldFormDelay;
+    [SerializeField]
+    private GameObject hammerHead;
 
+    [SerializeField]
+    private float dodgeAmount;
 
     private Camera mainCam;
-    private int objectCount = 0;
+    private Animator animator;
     private Text objectCountText;
 
+
+    private int objectCount = 0;
+    
     private bool isAirbone = false;
     private bool isGunActive = false;
     private bool isShieldActive = false;
-    private Animator animator;
-
-   
+    private bool isHammerActive = false;
+    
 
     private GameObject captures;
     private GameObject shield;
@@ -38,7 +47,7 @@ public class PlayerController : MonoBehaviour
 
     private void OnCollisionEnter(Collision collision)
     {
-        if(collision.collider.CompareTag("Enemy"))
+        if(collision.collider.CompareTag("Object"))
         {
             collision.collider.GetComponent<ObjectControl>().Target = gameObject;
             collision.collider.tag = "Occupied";
@@ -114,22 +123,42 @@ public class PlayerController : MonoBehaviour
         ///Skills and Activations
         SkillAndToolControls();
 
+        if(Input.GetKeyDown(KeyCode.LeftShift))
+        {
+            if(Input.GetKey(KeyCode.A))
+            {
+                GetComponent<Rigidbody>().velocity = -1*transform.right*dodgeAmount;
+            }
+            if(Input.GetKey(KeyCode.D))
+            {
+                GetComponent<Rigidbody>().velocity = transform.right*dodgeAmount;
+            }
+            if(Input.GetKey(KeyCode.W))
+            {
+                GetComponent<Rigidbody>().velocity = transform.forward*dodgeAmount;
+            }
+             if(Input.GetKey(KeyCode.S))
+            {
+                GetComponent<Rigidbody>().velocity = -1*transform.forward*dodgeAmount;
+            }
+        }
+
     }
 
     private void SkillAndToolControls()
     {
-        if (Input.GetKeyDown(KeyCode.Q) && !isShieldActive)
+        if (Input.GetKeyDown(KeyCode.Q) && !isShieldActive && !isHammerActive)
         {
             animator.SetTrigger("ToggleGun");
             isGunActive = !isGunActive;
         }
 
-        if (Input.GetKeyDown(KeyCode.E) && !isGunActive && objectCount >= 9)
+        if (Input.GetKeyDown(KeyCode.Mouse1) && CanActivateTool() && objectCount >= 9)
         {
             StartCoroutine(FormShield());
         }
 
-        if (Input.GetKeyDown(KeyCode.R) && isShieldActive)
+        if (Input.GetKeyUp(KeyCode.Mouse1) && isShieldActive)
         {
             isShieldActive = false;
 
@@ -141,8 +170,37 @@ public class PlayerController : MonoBehaviour
                 child.localScale = new Vector3(2, 2, 2);
                 child.gameObject.GetComponent<ObjectControl>().Target = gameObject;
                 child.gameObject.GetComponent<Rigidbody>().isKinematic = false;
+               
             }
   
+        }
+        if(Input.GetKeyDown(KeyCode.E) && CanActivateTool() && objectCount >= 9)
+        {
+            isHammerActive = true;
+            animator.SetTrigger("ToggleHammer");
+            StartCoroutine(FormHammer());
+        }
+        if(Input.GetKeyDown(KeyCode.R) && isHammerActive)
+        {
+            isHammerActive = false;
+            animator.SetTrigger("ToggleHammer");
+
+            for(int i = 0; i < 9; i++)
+            {
+                var child = hammerHead.transform.GetChild(0);
+
+                child.parent = captures.transform;
+                child.localScale = new Vector3(2, 2, 2);
+                child.gameObject.GetComponent<ObjectControl>().Target = gameObject;
+                child.gameObject.GetComponent<Rigidbody>().isKinematic = false;
+            }
+        }
+
+        if(Input.GetKeyDown(KeyCode.Mouse0) && isHammerActive)
+        {
+            int currentCount = animator.GetInteger("SlamCount");
+            currentCount = (currentCount + 1)%4;
+            animator.SetInteger("SlamCount",currentCount);
         }
     }
 
@@ -165,10 +223,10 @@ public class PlayerController : MonoBehaviour
 
             }
 
-            var direction = (hit.point - child.transform.position).normalized * 100.0f;
+            var direction = (hit.point - child.transform.position).normalized * projectileSpeed;
             child.GetComponent<ObjectControl>().Target = null;
             child.GetComponent<Rigidbody>().velocity = direction;
-            child.tag = "Enemy";
+            child.tag = "Object";
             child.GetComponent<MeshRenderer>().material.color = Color.white;
             UpdateObjectCount(-1);
         }
@@ -225,10 +283,42 @@ public class PlayerController : MonoBehaviour
 
                 child.transform.localPosition = new Vector3(1.5f - i, 2.0f - j, 0.0f);
 
-                yield return new WaitForSeconds(0.1f);
+                yield return new WaitForSeconds(shieldFormDelay);
             }
         }
 
         yield return null;
+    }
+
+     private IEnumerator FormHammer()
+    {
+        for (int i = 0; i < 9; i++)
+        {
+           
+            var child = captures.transform.GetChild(0);
+            child.transform.parent = hammerHead.transform;
+            child.GetComponent<Rigidbody>().isKinematic = true;
+            child.GetComponent<ObjectControl>().Target = null;
+
+            child.transform.localScale = new Vector3(0.35f, 3.33f, 3.33f);
+            child.transform.localRotation = Quaternion.Euler(new Vector3(0,0,0));
+
+            child.transform.localPosition = new Vector3(UnityEngine.Random.Range(-0.3f,0.5f),UnityEngine.Random.Range(-3f,4f), UnityEngine.Random.Range(-3f,3f));
+
+            yield return new WaitForSeconds(shieldFormDelay);
+            
+        }
+
+        yield return null;
+    }
+
+    private bool CanActivateTool()
+    {
+        return (!isGunActive && !isShieldActive && !isHammerActive);  
+    }
+
+    public void ResetSlamCount()
+    {
+        animator.SetInteger("SlamCount",0);
     }
 }
