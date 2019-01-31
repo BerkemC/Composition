@@ -30,6 +30,7 @@ public class PlayerController : MonoBehaviour
     private Camera mainCam;
     private Animator animator;
     private Text objectCountText;
+    private EffectManager effectManager;
 
 
     private int objectCount = 0;
@@ -76,6 +77,7 @@ public class PlayerController : MonoBehaviour
         animator = GetComponent<Animator>();
         captures = GameObject.Find("Captures");
         shield = GameObject.Find("Shield");
+        effectManager = GameObject.FindObjectOfType<EffectManager>();
     }
 
     // Update is called once per frame
@@ -128,18 +130,25 @@ public class PlayerController : MonoBehaviour
             if(Input.GetKey(KeyCode.A))
             {
                 GetComponent<Rigidbody>().velocity = -1*transform.right*dodgeAmount;
+                effectManager.GenerateEffect("DodgeEffect", new Vector3(0, 90, 0), transform);
             }
             if(Input.GetKey(KeyCode.D))
             {
                 GetComponent<Rigidbody>().velocity = transform.right*dodgeAmount;
+                effectManager.GenerateEffect("DodgeEffect", new Vector3(0, -90, 0), transform);
+
             }
-            if(Input.GetKey(KeyCode.W))
+            if (Input.GetKey(KeyCode.W))
             {
                 GetComponent<Rigidbody>().velocity = transform.forward*dodgeAmount;
+                effectManager.GenerateEffect("DodgeEffect", new Vector3(0, 180, 0), transform);
+
             }
-             if(Input.GetKey(KeyCode.S))
+            if (Input.GetKey(KeyCode.S))
             {
                 GetComponent<Rigidbody>().velocity = -1*transform.forward*dodgeAmount;
+                effectManager.GenerateEffect("DodgeEffect", new Vector3(0, 0, 0), transform);
+
             }
         }
 
