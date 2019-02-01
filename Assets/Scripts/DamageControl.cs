@@ -26,16 +26,19 @@ public class DamageControl : MonoBehaviour
         if(CompareTag("EnemyProjectile") && col.collider.CompareTag("Player"))
         {
             GameObject.FindObjectOfType<PlayerController>().TakeDamage(damage);
+            if (typeOfDamage.Equals(DamageType.SingleShot)) { damage = 0; }
         }
         else if((CompareTag("Occupied") || CompareTag("Object")) && col.collider.CompareTag("Enemy") )
         {
             col.collider.gameObject.GetComponent<Enemy>().TakeDamage(damage);
+            if (typeOfDamage.Equals(DamageType.SingleShot)) { damage = 0; }
         }
         else if ((CompareTag("Occupied") || CompareTag("Object")) && col.collider.CompareTag("Destructable"))
         {
             col.collider.gameObject.GetComponent<DestructableControl>().TakeDamage(damage);
+            if (typeOfDamage.Equals(DamageType.SingleShot)) { damage = 0; }
         }
 
-        if (typeOfDamage.Equals(DamageType.SingleShot)) { damage = 0; }
+       
     }
 }

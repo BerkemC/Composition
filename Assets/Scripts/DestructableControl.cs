@@ -23,7 +23,7 @@ public class DestructableControl : MonoBehaviour
     {
         health -= amount;
         Mathf.Clamp(health, 0, 999);
-
+        print(health);
         if (health == 0) { DestroyObject(); }
     }
 
@@ -41,5 +41,6 @@ public class DestructableControl : MonoBehaviour
                                                  transform.position.z + (Random.Range(-size.z, size.z))
                                                  );
         }
+        Destroy(gameObject);
     }
 }
