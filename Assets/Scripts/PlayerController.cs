@@ -23,6 +23,8 @@ public class PlayerController : MonoBehaviour
     private float shieldFormDelay;
     [SerializeField]
     private GameObject hammerHead;
+    [SerializeField]
+    private GameObject bigFirePoint;
 
     [SerializeField]
     private float dodgeAmount;
@@ -39,6 +41,7 @@ public class PlayerController : MonoBehaviour
     private bool isGunActive = false;
     private bool isShieldActive = false;
     private bool isHammerActive = false;
+    private float bigBangStartTime = -1;
     
 
     private GameObject captures;
@@ -99,6 +102,14 @@ public class PlayerController : MonoBehaviour
         transform.localRotation = Quaternion.Euler(rot);
     }
 
+
+    private Ray GetRayFromScreen()
+    {
+        var x = Screen.width / 2;
+        var y = Screen.height / 2;
+       return mainCam.ScreenPointToRay(new Vector3(x, y, 0));
+    }
+
     private void CheckInputs()
     {
         ///Movement
@@ -109,18 +120,15 @@ public class PlayerController : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Mouse0))
         {
 
-            var x = Screen.width / 2;
-            var y = Screen.height / 2;
-            Ray mouseRay = mainCam.ScreenPointToRay(new Vector3(x, y, 0));
-
-
             RaycastHit hit;
-            if (Physics.Raycast(mouseRay, out hit))
+            if (Physics.Raycast(GetRayFromScreen(), out hit))
             {
                 GunControls(hit);
             }
 
         }
+
+        
 
         ///Skills and Activations
         SkillAndToolControls();
@@ -156,13 +164,13 @@ public class PlayerController : MonoBehaviour
 
     private void SkillAndToolControls()
     {
-        if (Input.GetKeyDown(KeyCode.Q) && !isShieldActive && !isHammerActive)
+        if (Input.GetKeyDown(KeyCode.Q) && !isShieldActive && !isHammerActive && bigBangStartTime == -1)
         {
             animator.SetTrigger("ToggleGun");
             isGunActive = !isGunActive;
         }
 
-        if (Input.GetKeyDown(KeyCode.Mouse1) && CanActivateTool() && objectCount >= 9)
+        if (Input.GetKeyDown(KeyCode.Mouse1) && CanActivateTool() && objectCount >= 9 && bigBangStartTime == -1)
         {
             StartCoroutine(FormShield());
         }
@@ -183,7 +191,7 @@ public class PlayerController : MonoBehaviour
             }
   
         }
-        if(Input.GetKeyDown(KeyCode.E) && CanActivateTool() && objectCount >= 9)
+        if(Input.GetKeyDown(KeyCode.E) && CanActivateTool() && objectCount >= 9 && bigBangStartTime == -1)
         {
             isHammerActive = true;
             animator.SetTrigger("ToggleHammer");
@@ -211,6 +219,80 @@ public class PlayerController : MonoBehaviour
             currentCount = (currentCount + 1)%4;
             animator.SetInteger("SlamCount",currentCount);
         }
+
+        if(Input.GetKeyDown(KeyCode.F) && objectCount >= 5)
+        {
+            RaycastHit hit;
+            if(Physics.Raycast(GetRayFromScreen(),out hit))
+            {
+                StartCoroutine(LaunchProjectileRain(hit));
+            }
+        }
+
+        if(Input.GetKeyDown(KeyCode.Mouse0) && CanActivateTool() && objectCount >= 3)
+        {
+            bigBangStartTime = Time.time;
+            animator.SetTrigger("ToggleBigGun");
+        }
+
+        if(Input.GetKeyUp(KeyCode.Mouse0) && CanActivateTool() && bigBangStartTime != -1)
+        {
+            FireBigGun();
+
+        }
+    }
+
+    private void FireBigGun()
+    {
+        RaycastHit hit;
+        if (Physics.Raycast(GetRayFromScreen(), out hit))
+        {
+            float timeDifference = Time.time - bigBangStartTime;
+            bigBangStartTime = -1;
+            animator.SetTrigger("ToggleBigGun");
+
+            int objectNum = Mathf.Clamp((3 + (int)(timeDifference * 2)), 3, objectCount);
+
+            GameObject projectile = new GameObject("BigProjectile");
+            projectile.transform.position = bigFirePoint.transform.position;
+            projectile.AddComponent<Rigidbody>();
+            projectile.GetComponent<Rigidbody>().velocity = (hit.point - projectile.transform.position).normalized * projectileSpeed;
+            projectile.GetComponent<Rigidbody>().useGravity = false;
+
+            for (int i = 0; i < objectNum; i++)
+            {
+                var child = captures.transform.GetChild(0);
+
+                child.parent = projectile.transform;
+                child.localScale = new Vector3(2, 2, 2);
+                child.transform.position = new Vector3(projectile.transform.position.x + (UnityEngine.Random.Range(-3f, 3f)), projectile.transform.position.y + (UnityEngine.Random.Range(-3f, 3f)), projectile.transform.position.z + (UnityEngine.Random.Range(-3f, 3f)));
+                child.gameObject.GetComponent<ObjectControl>().Target = null;
+                child.gameObject.GetComponent<Rigidbody>().isKinematic = true;
+                ExcludeChild(child.gameObject);
+            }
+        }
+        else
+        {
+            animator.SetTrigger("ToggleBigGun");
+        }
+    }
+
+    private IEnumerator LaunchProjectileRain(RaycastHit hit)
+    {
+        for (int i = 0; i < 5; i++)
+        {
+            var child = captures.transform.GetChild(0);
+
+            child.parent = null;
+            child.localScale = new Vector3(2, 2, 2);
+            child.gameObject.GetComponent<Rigidbody>().isKinematic = false;
+            child.transform.position = new Vector3(hit.point.x + (UnityEngine.Random.Range(-1.5f, 1.5f)), 100, hit.point.z + (UnityEngine.Random.Range(-1.5f, 1.5f)));
+            child.gameObject.GetComponent<Rigidbody>().velocity = new Vector3(0, -projectileSpeed, 0);
+            ExcludeChild(child.gameObject);
+            yield return new WaitForSeconds(shieldFormDelay);
+        }
+
+        yield return null;
     }
 
     private void GunControls(RaycastHit hit)
@@ -233,11 +315,9 @@ public class PlayerController : MonoBehaviour
             }
 
             var direction = (hit.point - child.transform.position).normalized * projectileSpeed;
-            child.GetComponent<ObjectControl>().Target = null;
             child.GetComponent<Rigidbody>().velocity = direction;
-            child.tag = "Object";
-            child.GetComponent<MeshRenderer>().material.color = Color.white;
-            UpdateObjectCount(-1);
+            ExcludeChild(child.gameObject);
+            
         }
     }
 
@@ -329,5 +409,13 @@ public class PlayerController : MonoBehaviour
     public void ResetSlamCount()
     {
         animator.SetInteger("SlamCount",0);
+    }
+
+    private void ExcludeChild(GameObject child)
+    {
+        child.GetComponent<ObjectControl>().Target = null;
+        child.tag = "Object";
+        child.GetComponent<MeshRenderer>().material.color = Color.white;
+        UpdateObjectCount(-1);
     }
 }
