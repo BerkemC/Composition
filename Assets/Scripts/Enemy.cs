@@ -4,34 +4,16 @@ using UnityEngine;
 
 public class Enemy : MonoBehaviour
 {
-
     [SerializeField]
-    private float speed;
+    private int health;
 
-    [SerializeField]
-    private float minDistance;
+    public int Health { get => health; set => health = value; }
 
-    private GameObject target = null;
-
-    public GameObject Target { get => target; set => target = value; }
-
-    // Start is called before the first frame update
-    void Start()
+    public void TakeDamage(int amount)
     {
-        
-    }
+        health -= amount;
+        Mathf.Clamp(health, 0, 999);
 
-    // Update is called once per frame
-    void Update()
-    {
-       if(target && (target.transform.position - transform.position).magnitude > minDistance)
-       {
-            var direction = (target.transform.position - transform.position).normalized;
-            var amount = direction * speed * Time.deltaTime;
-            var pos = transform.position;
-            pos += amount;
-            transform.position = pos;
-
-       }
+        if(health == 0) { Destroy(gameObject); }
     }
 }

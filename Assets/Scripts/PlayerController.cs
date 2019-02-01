@@ -7,6 +7,8 @@ using UnityEngine.UI;
 
 public class PlayerController : MonoBehaviour
 {
+
+    #region Variables and References
     [SerializeField]
     private float moveSpeed;
     [SerializeField]
@@ -46,8 +48,8 @@ public class PlayerController : MonoBehaviour
 
     private GameObject captures;
     private GameObject shield;
-   
 
+    #endregion
 
     private void OnCollisionEnter(Collision collision)
     {
@@ -74,6 +76,11 @@ public class PlayerController : MonoBehaviour
 
     // Start is called before the first frame update
     void Start()
+    {
+        InitializeVariables();
+    }
+
+    private void InitializeVariables()
     {
         mainCam = Camera.main;
         objectCountText = GameObject.Find("ObjectText").gameObject.GetComponent<Text>();
@@ -128,38 +135,43 @@ public class PlayerController : MonoBehaviour
 
         }
 
-        
+
 
         ///Skills and Activations
         SkillAndToolControls();
 
-        if(Input.GetKeyDown(KeyCode.LeftShift))
+        DodgeControls();
+
+    }
+
+    private void DodgeControls()
+    {
+        if (Input.GetKeyDown(KeyCode.LeftShift))
         {
-            if(Input.GetKey(KeyCode.A))
+            if (Input.GetKey(KeyCode.A))
             {
-                GetComponent<Rigidbody>().velocity = -1*transform.right*dodgeAmount;
+                GetComponent<Rigidbody>().velocity = -1 * transform.right * dodgeAmount;
                 effectManager.GenerateEffect("DodgeEffect", new Vector3(0, 90, 0), transform);
             }
-            if(Input.GetKey(KeyCode.D))
+            if (Input.GetKey(KeyCode.D))
             {
-                GetComponent<Rigidbody>().velocity = transform.right*dodgeAmount;
+                GetComponent<Rigidbody>().velocity = transform.right * dodgeAmount;
                 effectManager.GenerateEffect("DodgeEffect", new Vector3(0, -90, 0), transform);
 
             }
             if (Input.GetKey(KeyCode.W))
             {
-                GetComponent<Rigidbody>().velocity = transform.forward*dodgeAmount;
+                GetComponent<Rigidbody>().velocity = transform.forward * dodgeAmount;
                 effectManager.GenerateEffect("DodgeEffect", new Vector3(0, 180, 0), transform);
 
             }
             if (Input.GetKey(KeyCode.S))
             {
-                GetComponent<Rigidbody>().velocity = -1*transform.forward*dodgeAmount;
+                GetComponent<Rigidbody>().velocity = -1 * transform.forward * dodgeAmount;
                 effectManager.GenerateEffect("DodgeEffect", new Vector3(0, 0, 0), transform);
 
             }
         }
-
     }
 
     private void SkillAndToolControls()
@@ -417,5 +429,13 @@ public class PlayerController : MonoBehaviour
         child.tag = "Object";
         child.GetComponent<MeshRenderer>().material.color = Color.white;
         UpdateObjectCount(-1);
+    }
+
+    public void TakeDamage(int amount)
+    {
+        objectCount -= amount;
+        Mathf.Clamp(objectCount, 0, 999);
+
+        for(int i =0; i < amount; i++) { ExcludeChild(captures.transform.GetChild(0).gameObject); }
     }
 }
