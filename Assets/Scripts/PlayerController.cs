@@ -59,6 +59,7 @@ public class PlayerController : MonoBehaviour
             collision.collider.tag = "Occupied";
             collision.collider.GetComponent<MeshRenderer>().material.color = GetComponent<MeshRenderer>().material.color;
             collision.collider.transform.parent = GameObject.Find("Captures").transform;
+            collision.collider.GetComponent<DamageControl>().Damage = 4;
             UpdateObjectCount(1);
         }
         else if(collision.collider.CompareTag("Ground"))
@@ -211,21 +212,10 @@ public class PlayerController : MonoBehaviour
         }
         if(Input.GetKeyDown(KeyCode.R) && isHammerActive)
         {
-            isHammerActive = false;
-            animator.SetTrigger("ToggleHammer");
-
-            for(int i = 0; i < 9; i++)
-            {
-                var child = hammerHead.transform.GetChild(0);
-
-                child.parent = captures.transform;
-                child.localScale = new Vector3(2, 2, 2);
-                child.gameObject.GetComponent<ObjectControl>().Target = gameObject;
-                child.gameObject.GetComponent<Rigidbody>().isKinematic = false;
-            }
+            DeactivateHammer();
         }
 
-        if(Input.GetKeyDown(KeyCode.Mouse0) && isHammerActive)
+        if (Input.GetKeyDown(KeyCode.Mouse0) && isHammerActive)
         {
             int currentCount = animator.GetInteger("SlamCount");
             currentCount = (currentCount + 1)%4;
@@ -254,6 +244,22 @@ public class PlayerController : MonoBehaviour
         }
     }
 
+    private void DeactivateHammer()
+    {
+        isHammerActive = false;
+        animator.SetTrigger("ToggleHammer");
+
+        while (hammerHead.transform.childCount > 0)
+        {
+            var child = hammerHead.transform.GetChild(0);
+
+            child.parent = captures.transform;
+            child.localScale = new Vector3(2, 2, 2);
+            child.gameObject.GetComponent<ObjectControl>().Target = gameObject;
+            child.gameObject.GetComponent<Rigidbody>().isKinematic = false;
+        }
+    }
+
     private void FireBigGun()
     {
         RaycastHit hit;
@@ -265,21 +271,26 @@ public class PlayerController : MonoBehaviour
 
             int objectNum = Mathf.Clamp((3 + (int)(timeDifference * 2)), 3, objectCount);
 
-            GameObject projectile = new GameObject("BigProjectile");
-            projectile.transform.position = bigFirePoint.transform.position;
-            projectile.AddComponent<Rigidbody>();
-            projectile.GetComponent<Rigidbody>().velocity = (hit.point - projectile.transform.position).normalized * projectileSpeed;
-            projectile.GetComponent<Rigidbody>().useGravity = false;
-
+           
             for (int i = 0; i < objectNum; i++)
             {
                 var child = captures.transform.GetChild(0);
 
-                child.parent = projectile.transform;
+                child.transform.parent = null;
+
+                child.transform.position = bigFirePoint.transform.position;
                 child.localScale = new Vector3(2, 2, 2);
-                child.transform.position = new Vector3(projectile.transform.position.x + (UnityEngine.Random.Range(-3f, 3f)), projectile.transform.position.y + (UnityEngine.Random.Range(-3f, 3f)), projectile.transform.position.z + (UnityEngine.Random.Range(-3f, 3f)));
+
+
+                var direction = (hit.point - child.transform.position).normalized * projectileSpeed;
+                child.GetComponent<Rigidbody>().velocity = direction;
+
+                
+                child.transform.position = new Vector3(bigFirePoint.transform.position.x + (UnityEngine.Random.Range(-3f, 3f)), bigFirePoint.transform.position.y + (UnityEngine.Random.Range(-3f, 3f)), bigFirePoint.transform.position.z + (UnityEngine.Random.Range(-3f, 3f)));
                 child.gameObject.GetComponent<ObjectControl>().Target = null;
-                child.gameObject.GetComponent<Rigidbody>().isKinematic = true;
+                
+                child.GetComponent<DamageControl>().TypeOfDamage = DamageControl.DamageType.SingleShot;
+
                 ExcludeChild(child.gameObject);
             }
         }
@@ -298,7 +309,7 @@ public class PlayerController : MonoBehaviour
             child.parent = null;
             child.localScale = new Vector3(2, 2, 2);
             child.gameObject.GetComponent<Rigidbody>().isKinematic = false;
-            child.transform.position = new Vector3(hit.point.x + (UnityEngine.Random.Range(-1.5f, 1.5f)), 100, hit.point.z + (UnityEngine.Random.Range(-1.5f, 1.5f)));
+            child.transform.position = new Vector3(hit.point.x + (UnityEngine.Random.Range(-1.5f, 1.5f)), 500, hit.point.z + (UnityEngine.Random.Range(-1.5f, 1.5f)));
             child.gameObject.GetComponent<Rigidbody>().velocity = new Vector3(0, -projectileSpeed, 0);
             ExcludeChild(child.gameObject);
             yield return new WaitForSeconds(shieldFormDelay);
@@ -328,6 +339,8 @@ public class PlayerController : MonoBehaviour
 
             var direction = (hit.point - child.transform.position).normalized * projectileSpeed;
             child.GetComponent<Rigidbody>().velocity = direction;
+            child.GetComponent<DamageControl>().TypeOfDamage = DamageControl.DamageType.SingleShot;
+
             ExcludeChild(child.gameObject);
             
         }
@@ -393,18 +406,22 @@ public class PlayerController : MonoBehaviour
 
      private IEnumerator FormHammer()
     {
-        for (int i = 0; i < 9; i++)
+
+        for (int i = 0; i < objectCount; i++)
         {
            
             var child = captures.transform.GetChild(0);
+            child.GetComponent<DamageControl>().TypeOfDamage = DamageControl.DamageType.Continuous;
+            child.GetComponent<DamageControl>().Damage = 1;
+
             child.transform.parent = hammerHead.transform;
-            child.GetComponent<Rigidbody>().isKinematic = true;
+            ContrainObject(child.gameObject);
             child.GetComponent<ObjectControl>().Target = null;
 
             child.transform.localScale = new Vector3(0.35f, 3.33f, 3.33f);
             child.transform.localRotation = Quaternion.Euler(new Vector3(0,0,0));
 
-            child.transform.localPosition = new Vector3(UnityEngine.Random.Range(-0.3f,0.5f),UnityEngine.Random.Range(-3f,4f), UnityEngine.Random.Range(-3f,3f));
+            child.transform.localPosition = new Vector3(UnityEngine.Random.Range(-3f,0.5f),UnityEngine.Random.Range(-4f,6f), UnityEngine.Random.Range(-4f,6f));
 
             yield return new WaitForSeconds(shieldFormDelay);
             
@@ -437,5 +454,12 @@ public class PlayerController : MonoBehaviour
         Mathf.Clamp(objectCount, 0, 999);
 
         for(int i =0; i < amount; i++) { ExcludeChild(captures.transform.GetChild(0).gameObject); }
+    }
+
+    private void ContrainObject(GameObject obj)
+    {
+        Rigidbody rb = obj.GetComponent<Rigidbody>();
+
+        rb.constraints = RigidbodyConstraints.FreezeAll;
     }
 }

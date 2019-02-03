@@ -55,6 +55,8 @@ public class CameraControl : MonoBehaviour
         rot.y += horizontal * Time.deltaTime * rotationSpeedHorizontal;
         rot.x -= vertical * Time.deltaTime * rotationSpeedVertical;
 
+        if(rot.x > 180) { rot.x -= 360; }
+
         rot.x = Mathf.Clamp(rot.x, minVerticalRotation, maxVerticalRotation);
         
         transform.localRotation = Quaternion.Euler(rot);

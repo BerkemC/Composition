@@ -7,6 +7,9 @@ TagManager:
   - Enemy
   - Occupied
   - Ground
+  - Object
+  - EnemyProjectile
+  - Destructable
   layers:
   - Default
   - TransparentFX

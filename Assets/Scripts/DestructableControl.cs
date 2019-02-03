@@ -23,7 +23,7 @@ public class DestructableControl : MonoBehaviour
     {
         health -= amount;
         Mathf.Clamp(health, 0, 999);
-        print(health);
+
         if (health == 0) { DestroyObject(); }
     }
 
@@ -32,7 +32,7 @@ public class DestructableControl : MonoBehaviour
         var mesh = GetComponent<MeshRenderer>();
         var size = mesh.bounds.size/2;
 
-        for(int i = 0; i < startingHealth; i++)
+        for(int i = 0; i < startingHealth/4; i++)
         {
             var obj = Instantiate(unitObject) as GameObject;
             obj.transform.parent = GameObject.Find("Objects").transform;
