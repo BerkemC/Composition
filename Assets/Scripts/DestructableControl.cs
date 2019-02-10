@@ -1,9 +1,13 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class DestructableControl : MonoBehaviour
 {
+
+    public static int DestructableCount = 0;
+
     [SerializeField]
     private GameObject unitObject;
 
@@ -16,15 +20,16 @@ public class DestructableControl : MonoBehaviour
 
     private void Start()
     {
+        UpdateDestructableCount(1);
         startingHealth = health;
     }
 
     public void TakeDamage(int amount)
     {
         health -= amount;
-        Mathf.Clamp(health, 0, 999);
+        
 
-        if (health == 0) { DestroyObject(); }
+        if (health <= 0) { DestroyObject(); }
     }
 
     private void DestroyObject()
@@ -41,6 +46,13 @@ public class DestructableControl : MonoBehaviour
                                                  transform.position.z + (Random.Range(-size.z, size.z))
                                                  );
         }
+        UpdateDestructableCount(-1);
         Destroy(gameObject);
+    }
+
+    private void UpdateDestructableCount(int amount)
+    {
+        DestructableCount += amount;
+        GameObject.Find("RemainingText").GetComponent<Text>().text = "Remaining Buildings: " + DestructableCount;
     }
 }

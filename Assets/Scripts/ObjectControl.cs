@@ -15,10 +15,7 @@ public class ObjectControl : MonoBehaviour
 
     public GameObject Target { get => target; set => target = value; }
 
-    private void OnCollisionEnter(Collision collision)
-    {
-        GetComponent<DamageControl>().ResolveDamage(collision);
-    }
+    
 
     // Start is called before the first frame update
     void Start()

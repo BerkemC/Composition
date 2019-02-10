@@ -18,6 +18,11 @@ public class DamageControl : MonoBehaviour
     public int Damage { get => damage; set => damage = value; }
     public DamageType TypeOfDamage { get => typeOfDamage; set => typeOfDamage = value; }
 
+    private void OnCollisionEnter(Collision collision)
+    {
+        ResolveDamage(collision);
+    }
+
     public void ResolveDamage(Collision col)
     {
 
@@ -25,8 +30,17 @@ public class DamageControl : MonoBehaviour
 
         if(CompareTag("EnemyProjectile") && col.collider.CompareTag("Player"))
         {
+            
             GameObject.FindObjectOfType<PlayerController>().TakeDamage(damage);
             if (typeOfDamage.Equals(DamageType.SingleShot)) { damage = 0; }
+
+            GetComponent<Rigidbody>().useGravity = true;
+        }
+        else if(CompareTag("EnemyProjectile"))
+        {
+           
+            if (typeOfDamage.Equals(DamageType.SingleShot)) { damage = 0; }
+            GetComponent<Rigidbody>().useGravity = true;
         }
         else if((CompareTag("Occupied") || CompareTag("Object")) && col.collider.CompareTag("Enemy") )
         {
@@ -35,6 +49,7 @@ public class DamageControl : MonoBehaviour
         }
         else if ((CompareTag("Occupied") || CompareTag("Object")) && col.collider.CompareTag("Destructable"))
         {
+
             col.collider.gameObject.GetComponent<DestructableControl>().TakeDamage(damage);
             if (typeOfDamage.Equals(DamageType.SingleShot)) { damage = 0; }
         }

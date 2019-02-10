@@ -27,6 +27,10 @@ public class PlayerController : MonoBehaviour
     private GameObject hammerHead;
     [SerializeField]
     private GameObject bigFirePoint;
+    [SerializeField]
+    private GameObject gameOverPanel;
+
+
 
     [SerializeField]
     private float dodgeAmount;
@@ -190,21 +194,11 @@ public class PlayerController : MonoBehaviour
 
         if (Input.GetKeyUp(KeyCode.Mouse1) && isShieldActive)
         {
-            isShieldActive = false;
+            StopAllCoroutines();
+            DeactivateShield();
 
-            for(int i = 0; i < 9; i++)
-            {
-                var child = shield.transform.GetChild(0);
-
-                child.parent = captures.transform;
-                child.localScale = new Vector3(2, 2, 2);
-                child.gameObject.GetComponent<ObjectControl>().Target = gameObject;
-                child.gameObject.GetComponent<Rigidbody>().isKinematic = false;
-               
-            }
-  
         }
-        if(Input.GetKeyDown(KeyCode.E) && CanActivateTool() && objectCount >= 9 && bigBangStartTime == -1)
+        if (Input.GetKeyDown(KeyCode.E) && CanActivateTool() && objectCount >= 9 && bigBangStartTime == -1)
         {
             isHammerActive = true;
             animator.SetTrigger("ToggleHammer");
@@ -222,7 +216,7 @@ public class PlayerController : MonoBehaviour
             animator.SetInteger("SlamCount",currentCount);
         }
 
-        if(Input.GetKeyDown(KeyCode.F) && objectCount >= 5)
+        if(Input.GetKeyDown(KeyCode.F) && objectCount >= 5 && !isShieldActive)
         {
             RaycastHit hit;
             if(Physics.Raycast(GetRayFromScreen(),out hit))
@@ -244,6 +238,22 @@ public class PlayerController : MonoBehaviour
         }
     }
 
+    private void DeactivateShield()
+    {
+        isShieldActive = false;
+
+        while (shield.transform.childCount > 0)
+        {
+            var child = shield.transform.GetChild(0);
+
+            child.parent = captures.transform;
+            child.localScale = new Vector3(2, 2, 2);
+            child.gameObject.GetComponent<ObjectControl>().Target = gameObject;
+            child.gameObject.GetComponent<Rigidbody>().isKinematic = false;
+
+        }
+    }
+
     private void DeactivateHammer()
     {
         isHammerActive = false;
@@ -257,6 +267,7 @@ public class PlayerController : MonoBehaviour
             child.localScale = new Vector3(2, 2, 2);
             child.gameObject.GetComponent<ObjectControl>().Target = gameObject;
             child.gameObject.GetComponent<Rigidbody>().isKinematic = false;
+            RemoveConstraints(child.gameObject);
         }
     }
 
@@ -384,9 +395,9 @@ public class PlayerController : MonoBehaviour
     {
         isShieldActive = true;
 
-        for (int i = 0; i < 3; i++)
+        for (int i = 0; i < (int)Mathf.Sqrt(objectCount); i++)
         {
-            for (int j = 0; j < 3; j++)
+            for (int j = 0; j < (int)Mathf.Sqrt(objectCount); j++)
             {
                 var child = captures.transform.GetChild(0);
                 child.transform.parent = shield.transform;
@@ -395,7 +406,7 @@ public class PlayerController : MonoBehaviour
 
                 child.transform.localScale = new Vector3(0.75f, 0.75f, 0.75f);
 
-                child.transform.localPosition = new Vector3(1.5f - i, 2.0f - j, 0.0f);
+                child.transform.localPosition = new Vector3((((int)Mathf.Sqrt(objectCount)-3)/2+(1.5f)) - i, + 2.0f - j, 0.0f);
 
                 yield return new WaitForSeconds(shieldFormDelay);
             }
@@ -415,7 +426,7 @@ public class PlayerController : MonoBehaviour
             child.GetComponent<DamageControl>().Damage = 1;
 
             child.transform.parent = hammerHead.transform;
-            ContrainObject(child.gameObject);
+            ConstrainObject(child.gameObject);
             child.GetComponent<ObjectControl>().Target = null;
 
             child.transform.localScale = new Vector3(0.35f, 3.33f, 3.33f);
@@ -450,16 +461,38 @@ public class PlayerController : MonoBehaviour
 
     public void TakeDamage(int amount)
     {
-        objectCount -= amount;
-        Mathf.Clamp(objectCount, 0, 999);
+        UpdateObjectCount(-amount);
 
-        for(int i =0; i < amount; i++) { ExcludeChild(captures.transform.GetChild(0).gameObject); }
+        if (captures.transform.childCount >= amount)
+        {
+      
+            for (int i = 0; i < amount; i++) { Destroy(captures.transform.GetChild(0).gameObject); }
+        }
+        else
+        {
+            while(captures.transform.childCount > 0) { Destroy(captures.transform.GetChild(0).gameObject); }
+
+            if(GameObject.Find("Objects").transform.childCount == 0)
+            {
+                Time.timeScale = 0.0f;
+                gameOverPanel.SetActive(true);
+                Cursor.lockState = CursorLockMode.None;
+                Cursor.visible = true;
+            }
+        }
     }
 
-    private void ContrainObject(GameObject obj)
+    private void ConstrainObject(GameObject obj)
     {
         Rigidbody rb = obj.GetComponent<Rigidbody>();
 
         rb.constraints = RigidbodyConstraints.FreezeAll;
+    }
+
+    private void RemoveConstraints(GameObject obj)
+    {
+        Rigidbody rb = obj.GetComponent<Rigidbody>();
+
+        rb.constraints = RigidbodyConstraints.None;
     }
 }
